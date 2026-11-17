@@ -1,0 +1,475 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Security Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email.lower() == 'udhayaprakashv.24@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isStringWithSize(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidBloodType(val) {
+      return val in ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+    }
+
+    function isValidSex(val) {
+      return val in ['Male', 'Female', 'Other'];
+    }
+
+    function isValidResponderRole(val) {
+      return val in ['ADMIN', 'DOCTOR', 'PARAMEDIC', 'ER_PHYSICIAN', 'TRIAGE_NURSE'];
+    }
+
+    function isValidAuditAction(val) {
+      return val in [
+        'SCAN_MATCH',
+        'DOCTOR_BIOMETRIC_MATCH',
+        'EMERGENCY_CONTACT_NOTIFIED',
+        'RECORD_ENROLLED',
+        'RECORD_UPDATED',
+        'DOCTOR_LINK_CREATED',
+        'DOCTOR_LINK_REVOKED'
+      ];
+    }
+
+    function isValidHistoryCategory(val) {
+      return val in ['SURGERY', 'HOSPITALIZATION', 'LAB_REPORT', 'IMMUNIZATION', 'TRAUMA_ER', 'DIAGNOSIS'];
+    }
+
+    function isValidLinkStatus(val) {
+      return val in ['ACTIVE', 'REVOKED'];
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || arr[0] is string);
+    }
+
+    function sanitizedEmail(email) {
+      return email.lower().replace('[^a-z0-9]', '_');
+    }
+
+    function doctorLinkPath(patientId) {
+      return /databases/$(database)/documents/doctorBiometricLinks/$(patientId + '__' + sanitizedEmail(request.auth.token.email));
+    }
+
+    function isLinkedVerifiedDoctor(patientId) {
+      return isVerifiedUser()
+        && exists(doctorLinkPath(patientId))
+        && get(doctorLinkPath(patientId)).data.doctorEmail == request.auth.token.email.lower()
+        && get(doctorLinkPath(patientId)).data.patientId == patientId
+        && get(doctorLinkPath(patientId)).data.status == 'ACTIVE'
+        && get(doctorLinkPath(patientId)).data.biometricVerified == true;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidResponder(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'seeded', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'role', 'seeded', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && isStringWithSize(data.displayName, 1, 120)
+        && isStringWithSize(data.email, 3, 160)
+        && isValidResponderRole(data.role)
+        && data.seeded is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPatient(data) {
+      return data.keys().hasAll([
+          'ownerId', 'mrn', 'fingerprintCode', 'fullName', 'age', 'sex', 'bloodType',
+          'avatarUrl', 'allergies', 'medications', 'conditions', 'criticalAlerts',
+          'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone',
+          'dnrStatus', 'organDonor', 'lastScannedAt', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'mrn', 'fingerprintCode', 'fullName', 'age', 'sex', 'bloodType',
+          'avatarUrl', 'allergies', 'medications', 'conditions', 'criticalAlerts',
+          'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone',
+          'dnrStatus', 'organDonor', 'lastScannedAt', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.ownerId)
+        && isStringWithSize(data.mrn, 8, 16) && data.mrn.matches('^MRN-[0-9]{4,10}$')
+        && isStringWithSize(data.fingerprintCode, 7, 36) && data.fingerprintCode.matches('^FP-[A-Z0-9\\-]{4,32}$')
+        && isStringWithSize(data.fullName, 2, 120)
+        && data.age is number && data.age >= 0 && data.age <= 130
+        && isValidSex(data.sex)
+        && isValidBloodType(data.bloodType)
+        && isStringWithSize(data.avatarUrl, 0, 300)
+        && isBoundedStringList(data.allergies, 12)
+        && isBoundedStringList(data.medications, 15)
+        && isBoundedStringList(data.conditions, 12)
+        && isBoundedStringList(data.criticalAlerts, 10)
+        && isStringWithSize(data.emergencyContactName, 1, 120)
+        && isStringWithSize(data.emergencyContactRelation, 1, 60)
+        && isStringWithSize(data.emergencyContactPhone, 4, 40)
+        && data.dnrStatus is bool
+        && data.organDonor is bool
+        && data.lastScannedAt is timestamp
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTriageAssessment(data) {
+      return data.keys().hasAll([
+          'ownerId', 'patientId', 'heartRate', 'spo2', 'bpSystolic', 'bpDiastolic',
+          'gcsScore', 'chiefComplaint', 'esiLevel', 'clinicalSynopsis',
+          'immediateActions', 'contraindications', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'patientId', 'heartRate', 'spo2', 'bpSystolic', 'bpDiastolic',
+          'gcsScore', 'chiefComplaint', 'esiLevel', 'clinicalSynopsis',
+          'immediateActions', 'contraindications', 'createdAt'
+        ])
+        && isValidId(data.ownerId)
+        && isValidId(data.patientId)
+        && data.heartRate is number && data.heartRate >= 0 && data.heartRate <= 300
+        && data.spo2 is number && data.spo2 >= 0 && data.spo2 <= 100
+        && data.bpSystolic is number && data.bpSystolic >= 0 && data.bpSystolic <= 320
+        && data.bpDiastolic is number && data.bpDiastolic >= 0 && data.bpDiastolic <= 220
+        && data.gcsScore is number && data.gcsScore >= 3 && data.gcsScore <= 15
+        && isStringWithSize(data.chiefComplaint, 1, 500)
+        && data.esiLevel is number && data.esiLevel >= 1 && data.esiLevel <= 5
+        && isStringWithSize(data.clinicalSynopsis, 1, 1500)
+        && data.immediateActions is list && data.immediateActions.size() >= 1 && data.immediateActions.size() <= 10 && data.immediateActions[0] is string
+        && isBoundedStringList(data.contraindications, 10)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll([
+          'ownerId', 'patientId', 'actionType', 'summary',
+          'actorEmail', 'actorName', 'actorRole', 'fingerprintCode', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'patientId', 'actionType', 'summary',
+          'actorEmail', 'actorName', 'actorRole', 'fingerprintCode', 'createdAt'
+        ])
+        && isValidId(data.ownerId)
+        && isValidId(data.patientId)
+        && isValidAuditAction(data.actionType)
+        && isStringWithSize(data.summary, 1, 300)
+        && isStringWithSize(data.actorEmail, 3, 160)
+        && isStringWithSize(data.actorName, 1, 120)
+        && isValidResponderRole(data.actorRole)
+        && isStringWithSize(data.fingerprintCode, 0, 36)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMedicalHistoryEntry(data) {
+      return data.keys().hasAll([
+          'ownerId', 'patientId', 'category', 'eventDate', 'title',
+          'facility', 'clinician', 'notes', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'patientId', 'category', 'eventDate', 'title',
+          'facility', 'clinician', 'notes', 'createdAt'
+        ])
+        && isValidId(data.ownerId)
+        && isValidId(data.patientId)
+        && isValidHistoryCategory(data.category)
+        && isStringWithSize(data.eventDate, 10, 10) && data.eventDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && isStringWithSize(data.title, 2, 160)
+        && isStringWithSize(data.facility, 2, 160)
+        && isStringWithSize(data.clinician, 0, 120)
+        && isStringWithSize(data.notes, 1, 800)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidDoctorBiometricLink(data) {
+      return data.keys().hasAll([
+          'adminUid', 'adminEmail', 'doctorEmail', 'doctorName', 'patientId',
+          'patientMrn', 'fingerprintCode', 'status', 'biometricVerified', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'adminUid', 'adminEmail', 'doctorEmail', 'doctorName', 'patientId',
+          'patientMrn', 'fingerprintCode', 'status', 'biometricVerified', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.adminUid)
+        && isStringWithSize(data.adminEmail, 3, 160)
+        && isStringWithSize(data.doctorEmail, 3, 160)
+        && isStringWithSize(data.doctorName, 2, 120)
+        && isValidId(data.patientId)
+        && isStringWithSize(data.patientMrn, 8, 16) && data.patientMrn.matches('^MRN-[0-9]{4,10}$')
+        && isStringWithSize(data.fingerprintCode, 7, 36) && data.fingerprintCode.matches('^FP-[A-Z0-9\\-]{4,32}$')
+        && isValidLinkStatus(data.status)
+        && data.biometricVerified is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidClinicalVaultDossier(data) {
+      return data.keys().hasAll([
+          'adminUid', 'patientId', 'doctorEmail', 'fullName', 'age', 'sex', 'bloodType',
+          'mrn', 'fingerprintCode', 'allergies', 'medications', 'conditions', 'criticalAlerts',
+          'historySummaries', 'emergencyContactName', 'emergencyContactRelation',
+          'emergencyContactPhone', 'dnrStatus', 'organDonor', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'adminUid', 'patientId', 'doctorEmail', 'fullName', 'age', 'sex', 'bloodType',
+          'mrn', 'fingerprintCode', 'allergies', 'medications', 'conditions', 'criticalAlerts',
+          'historySummaries', 'emergencyContactName', 'emergencyContactRelation',
+          'emergencyContactPhone', 'dnrStatus', 'organDonor', 'updatedAt'
+        ])
+        && isValidId(data.adminUid)
+        && isValidId(data.patientId)
+        && isStringWithSize(data.doctorEmail, 3, 160)
+        && isStringWithSize(data.fullName, 2, 120)
+        && data.age is number && data.age >= 0 && data.age <= 130
+        && isValidSex(data.sex)
+        && isValidBloodType(data.bloodType)
+        && isStringWithSize(data.mrn, 8, 16) && data.mrn.matches('^MRN-[0-9]{4,10}$')
+        && isStringWithSize(data.fingerprintCode, 7, 36) && data.fingerprintCode.matches('^FP-[A-Z0-9\\-]{4,32}$')
+        && isBoundedStringList(data.allergies, 12)
+        && isBoundedStringList(data.medications, 15)
+        && isBoundedStringList(data.conditions, 12)
+        && isBoundedStringList(data.criticalAlerts, 10)
+        && isBoundedStringList(data.historySummaries, 25)
+        && isStringWithSize(data.emergencyContactName, 1, 120)
+        && isStringWithSize(data.emergencyContactRelation, 1, 60)
+        && isStringWithSize(data.emergencyContactPhone, 4, 40)
+        && data.dnrStatus is bool
+        && data.organDonor is bool
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /responders/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidResponder(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().email.lower() == request.auth.token.email.lower()
+        && ((isAdmin() && incoming().role == 'ADMIN') || (incoming().role != 'ADMIN' && incoming().seeded == false))
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidResponder(incoming())
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && ((isAdmin() && incoming().role == 'ADMIN') || incoming().role == existing().role)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'role', 'seeded', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /patients/{patientId} {
+      allow get: if isValidId(patientId)
+        && ((isAdmin() && (resource == null || existing().ownerId == request.auth.uid)) || isLinkedVerifiedDoctor(patientId));
+      allow list: if isAdmin() && resource.data.ownerId == request.auth.uid;
+      allow create: if isAdmin()
+        && isValidId(patientId)
+        && isValidPatient(incoming())
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().lastScannedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(patientId)
+        && existing().ownerId == request.auth.uid
+        && isValidPatient(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().mrn == existing().mrn
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['lastScannedAt', 'updatedAt'])
+            && incoming().lastScannedAt == request.time
+          ) || (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'fullName', 'age', 'sex', 'bloodType', 'avatarUrl', 'fingerprintCode',
+              'allergies', 'medications', 'conditions', 'criticalAlerts',
+              'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone',
+              'dnrStatus', 'organDonor', 'updatedAt'
+            ])
+            && incoming().lastScannedAt == existing().lastScannedAt
+          )
+        );
+      allow delete: if isAdmin()
+        && isValidId(patientId)
+        && existing().ownerId == request.auth.uid;
+    }
+
+    match /triageAssessments/{assessmentId} {
+      allow get: if isAdmin()
+        && isValidId(assessmentId)
+        && existing().ownerId == request.auth.uid;
+      allow list: if isAdmin()
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if isAdmin()
+        && isValidId(assessmentId)
+        && isValidTriageAssessment(incoming())
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/patients/$(incoming().patientId))
+        && get(/databases/$(database)/documents/patients/$(incoming().patientId)).data.ownerId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin()
+        && isValidId(assessmentId)
+        && existing().ownerId == request.auth.uid;
+    }
+
+    match /auditLogs/{logId} {
+      allow get: if isAdmin()
+        && isValidId(logId)
+        && existing().ownerId == request.auth.uid;
+      allow list: if isAdmin()
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(logId)
+        && isValidAuditLog(incoming())
+        && incoming().createdAt == request.time
+        && (
+          (
+            isAdmin()
+            && incoming().ownerId == request.auth.uid
+            && incoming().actorEmail == request.auth.token.email.lower()
+            && exists(/databases/$(database)/documents/patients/$(incoming().patientId))
+            && get(/databases/$(database)/documents/patients/$(incoming().patientId)).data.ownerId == request.auth.uid
+          ) || (
+            incoming().actionType == 'DOCTOR_BIOMETRIC_MATCH'
+            && incoming().actorRole == 'DOCTOR'
+            && incoming().actorEmail == request.auth.token.email.lower()
+            && exists(doctorLinkPath(incoming().patientId))
+            && get(doctorLinkPath(incoming().patientId)).data.doctorEmail == request.auth.token.email.lower()
+            && get(doctorLinkPath(incoming().patientId)).data.status == 'ACTIVE'
+            && get(doctorLinkPath(incoming().patientId)).data.adminUid == incoming().ownerId
+            && incoming().fingerprintCode == get(doctorLinkPath(incoming().patientId)).data.fingerprintCode
+          )
+        );
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /medicalHistories/{historyId} {
+      allow get: if isAdmin()
+        && isValidId(historyId)
+        && existing().ownerId == request.auth.uid;
+      allow list: if isAdmin()
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if isAdmin()
+        && isValidId(historyId)
+        && isValidMedicalHistoryEntry(incoming())
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/patients/$(incoming().patientId))
+        && get(/databases/$(database)/documents/patients/$(incoming().patientId)).data.ownerId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin()
+        && isValidId(historyId)
+        && existing().ownerId == request.auth.uid;
+    }
+
+    match /doctorBiometricLinks/{linkId} {
+      allow get: if isValidId(linkId)
+        && (
+          (isAdmin() && (resource == null || existing().adminUid == request.auth.uid))
+          || (isVerifiedUser() && resource != null && existing().doctorEmail == request.auth.token.email.lower())
+        );
+      allow list: if (isAdmin() && resource.data.adminUid == request.auth.uid)
+        || (isVerifiedUser() && resource.data.doctorEmail == request.auth.token.email.lower());
+      allow create: if isAdmin()
+        && isValidId(linkId)
+        && isValidDoctorBiometricLink(incoming())
+        && linkId == incoming().patientId + '__' + sanitizedEmail(incoming().doctorEmail)
+        && incoming().adminUid == request.auth.uid
+        && incoming().adminEmail == request.auth.token.email.lower()
+        && incoming().doctorEmail == incoming().doctorEmail.lower()
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/patients/$(incoming().patientId))
+        && get(/databases/$(database)/documents/patients/$(incoming().patientId)).data.ownerId == request.auth.uid;
+      allow update: if isVerifiedUser()
+        && isValidId(linkId)
+        && isValidDoctorBiometricLink(incoming())
+        && incoming().adminUid == existing().adminUid
+        && incoming().adminEmail == existing().adminEmail
+        && incoming().doctorEmail == existing().doctorEmail
+        && incoming().patientId == existing().patientId
+        && incoming().patientMrn == existing().patientMrn
+        && incoming().fingerprintCode == existing().fingerprintCode
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (
+            isAdmin()
+            && existing().adminUid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'biometricVerified', 'doctorName', 'updatedAt'])
+          ) || (
+            existing().doctorEmail == request.auth.token.email.lower()
+            && existing().status == 'ACTIVE'
+            && incoming().status == existing().status
+            && incoming().biometricVerified == true
+            && incoming().diff(existing()).affectedKeys().hasOnly(['biometricVerified', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin()
+        && isValidId(linkId)
+        && existing().adminUid == request.auth.uid;
+
+      match /vault/{vaultDocId} {
+        allow list: if false;
+        allow get: if isValidId(linkId)
+          && vaultDocId == 'clinicalDossier'
+          && (
+            (isAdmin() && (resource == null || existing().adminUid == request.auth.uid))
+            || (
+              isVerifiedUser()
+              && exists(/databases/$(database)/documents/doctorBiometricLinks/$(linkId))
+              && get(/databases/$(database)/documents/doctorBiometricLinks/$(linkId)).data.doctorEmail == request.auth.token.email.lower()
+              && get(/databases/$(database)/documents/doctorBiometricLinks/$(linkId)).data.status == 'ACTIVE'
+              && get(/databases/$(database)/documents/doctorBiometricLinks/$(linkId)).data.biometricVerified == true
+            )
+          );
+        allow create, update: if isAdmin()
+          && isValidId(linkId)
+          && vaultDocId == 'clinicalDossier'
+          && isValidClinicalVaultDossier(incoming())
+          && incoming().adminUid == request.auth.uid
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/doctorBiometricLinks/$(linkId))
+          && get(/databases/$(database)/documents/doctorBiometricLinks/$(linkId)).data.adminUid == request.auth.uid;
+        allow delete: if isAdmin()
+          && isValidId(linkId)
+          && vaultDocId == 'clinicalDossier'
+          && existing().adminUid == request.auth.uid;
+      }
+    }
+  }
+}

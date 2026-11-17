@@ -1,0 +1,216 @@
+---
+name: Clinical Precision AI
+colors:
+  surface: '#f8f9ff'
+  surface-dim: '#cbdbf5'
+  surface-bright: '#f8f9ff'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#eff4ff'
+  surface-container: '#e5eeff'
+  surface-container-high: '#dce9ff'
+  surface-container-highest: '#d3e4fe'
+  on-surface: '#0b1c30'
+  on-surface-variant: '#3f4850'
+  inverse-surface: '#213145'
+  inverse-on-surface: '#eaf1ff'
+  outline: '#707881'
+  outline-variant: '#bfc7d2'
+  surface-tint: '#006398'
+  primary: '#006194'
+  on-primary: '#ffffff'
+  primary-container: '#007bb9'
+  on-primary-container: '#fdfcff'
+  inverse-primary: '#93ccff'
+  secondary: '#316190'
+  on-secondary: '#ffffff'
+  secondary-container: '#9dcaff'
+  on-secondary-container: '#235583'
+  tertiary: '#006577'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#008096'
+  on-tertiary-container: '#f9fdff'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#cce5ff'
+  primary-fixed-dim: '#93ccff'
+  on-primary-fixed: '#001d31'
+  on-primary-fixed-variant: '#004b73'
+  secondary-fixed: '#d1e4ff'
+  secondary-fixed-dim: '#9dcaff'
+  on-secondary-fixed: '#001d35'
+  on-secondary-fixed-variant: '#124976'
+  tertiary-fixed: '#acedff'
+  tertiary-fixed-dim: '#4cd7f6'
+  on-tertiary-fixed: '#001f26'
+  on-tertiary-fixed-variant: '#004e5c'
+  background: '#f8f9ff'
+  on-background: '#0b1c30'
+  surface-variant: '#d3e4fe'
+typography:
+  headline-xl:
+    fontFamily: Manrope
+    fontSize: 36px
+    fontWeight: '700'
+    lineHeight: 44px
+    letterSpacing: -0.02em
+  headline-xl-mobile:
+    fontFamily: Manrope
+    fontSize: 28px
+    fontWeight: '700'
+    lineHeight: 36px
+    letterSpacing: -0.01em
+  headline-lg:
+    fontFamily: Manrope
+    fontSize: 24px
+    fontWeight: '700'
+    lineHeight: 32px
+    letterSpacing: -0.01em
+  headline-md:
+    fontFamily: Manrope
+    fontSize: 20px
+    fontWeight: '600'
+    lineHeight: 28px
+  headline-sm:
+    fontFamily: Manrope
+    fontSize: 16px
+    fontWeight: '600'
+    lineHeight: 24px
+  body-lg:
+    fontFamily: Hanken Grotesk
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 24px
+  body-md:
+    fontFamily: Hanken Grotesk
+    fontSize: 14px
+    fontWeight: '400'
+    lineHeight: 20px
+  body-sm:
+    fontFamily: Hanken Grotesk
+    fontSize: 12px
+    fontWeight: '400'
+    lineHeight: 16px
+  label-lg:
+    fontFamily: Hanken Grotesk
+    fontSize: 14px
+    fontWeight: '600'
+    lineHeight: 20px
+    letterSpacing: 0.01em
+  label-md:
+    fontFamily: Hanken Grotesk
+    fontSize: 12px
+    fontWeight: '600'
+    lineHeight: 16px
+    letterSpacing: 0.02em
+  label-sm:
+    fontFamily: Hanken Grotesk
+    fontSize: 10px
+    fontWeight: '700'
+    lineHeight: 14px
+    letterSpacing: 0.05em
+rounded:
+  sm: 0.5rem
+  DEFAULT: 1rem
+  md: 1.5rem
+  lg: 2rem
+  xl: 3rem
+  full: 9999px
+spacing:
+  gutter: 1rem
+  gutter-mobile: 0.75rem
+  margin: 1.5rem
+  margin-mobile: 1rem
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 1rem
+  space-lg: 1.5rem
+  space-xl: 2rem
+---
+
+## Brand & Style
+
+The design system establishes an ultra-reliable, institutional, and reassuring environment engineered for critical clinical contexts. The brand persona blends cutting-edge algorithmic intelligence with the calm, unwavering authority of top-tier medical facilities. Every interaction must project zero-latency clarity, immaculate hygiene, and total data integrity.
+
+Target audiences include emergency room triage teams, cross-institutional medical specialists, and patients in urgent care transitions. The visual language rejects decorative clutter in favor of high-legibility data hierarchy, tactile pill-shaped containment, and focused emergency signaling. Drawing from modern clinical minimalism and high-density institutional software, the interface leverages pure white operational surfaces, cool cyan-tinted atmospheric depth, and unmistakable status alerts that guide critical decisions under cognitive strain.
+
+## Colors
+
+The system uses `#0284C7` (Precision Cyan) as the primary focal tone, delivering high-contrast operational feedback, active focus indicators, and key touch targets. `#0A4572` (Deep Clinical Blue) anchors structural headers, identity anchors, and top-tier institutional elements. `#06B6D4` (Vital Cyan) provides telemetry accents and diagnostic status highlighting.
+
+Neutral foundations rely on `#F8FAFC` for clinical canvas backdrops, `#FFFFFF` for elevated diagnostic cards, and slate tones (`#64748B` to `#0F172A`) for medical typography. Critical triage states are reserved strictly for semantic workflows:
+- Emergency Critical: `#DC2626` text and borders over `#FEE2E2` fills.
+- Triage Warning: `#D97706` text over `#FEF3C7` fills.
+- Diagnostic Validated / Stable: `#059669` text over `#D1FAE5` fills.
+
+Interactive states must maintain a minimum contrast ratio of 4.5:1 against card backgrounds, scaling to 7:1 for critical vital statistics and patient identification badges.
+
+## Typography
+
+Typography establishes an uncompromising hierarchy between structural administrative metadata and patient vital data. `Manrope` governs all headings with balanced, geometric forms that project stability and clinical composure. `Hanken Grotesk` drives all reading copy, lab entries, dosage notes, and operational labels due to its open apertures and crisp rendering across dense mobile interfaces.
+
+Data points such as heart rates, blood gas levels, and medical record numbers must employ tabular numerals (`font-variant-numeric: tabular-nums`) to prevent optical shift during real-time streaming updates. On viewports below 480px, `headline-xl` transitions to `headline-xl-mobile` to maintain balanced screen budgets without causing unintended line wraps in critical patient titles.
+
+## Layout & Spacing
+
+The layout model is built around a predictable, touch-optimized fluid vertical flow tailored for mobile handheld usage and tablet clinical stations. The core mobile canvas uses a 4-column structure with `1rem` margins and `0.75rem` gutters, expanding to an 8-column layout on tablets and a 12-column fixed grid (`margin: 1.5rem`, `gutter: 1rem`) on desktop management terminals.
+
+Spacing enforces clear visual compartmentalization:
+- `space-xs` (4px): Micro-spacing between paired labels and medical values.
+- `space-sm` (8px): Gaps between status badges, filter chips, and interactive icon containers.
+- `space-md` (16px): Standard internal card padding, input field padding, and list item row separation.
+- `space-lg` (24px): Structural distancing between distinct diagnostic sections and patient timeline groups.
+- `space-xl` (32px): Primary section demarcation and bottom fixed-action dock clearances.
+
+All primary touch targets across mobile views enforce a strict minimum clearance of 48px by 48px to guarantee error-free triage operation under rapid clinical transit.
+
+## Elevation & Depth
+
+Visual depth is achieved through surgical, cool-toned ambient shadows and pure white surface containment layered above `#F8FAFC` base canvases. Blur radii remain tightly controlled to avoid visual blurriness in clinical environments.
+
+- **Level 0 (Flat/Substrate):** `#F8FAFC` background canvas; divider lines using 1px solid `#E2E8F0`.
+- **Level 1 (Clinical Cards & Patient Rows):** `#FFFFFF` surfaces with subtle border `1px solid #E2E8F0` coupled with an ambient shadow: `0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05)`.
+- **Level 2 (Active Overlays & Floating Navigation):** Floating bottom navigation docks, persistent emergency banners, and selected record drawers use `0 10px 15px -3px rgba(2, 132, 199, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04)`.
+- **Level 3 (Urgent Dialogs & Emergency Overlays):** Modal sheets and critical drug-interaction warnings take `0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06)` with a backdrop blur of `4px` across `#0F172A` at 40% opacity.
+
+## Shapes
+
+The interface embraces a pill-shaped, fully rounded design language (level 3) that softens complex clinical data, reduces visual fatigue, and establishes distinct visual boundaries for high-speed touch interactions.
+
+- Standard buttons, badges, chips, search bars, and input fields utilize full pill geometry (`1rem` / fully rounded edge radius).
+- Patient cards, triage modules, and test panel containers apply `2rem` (`rounded-lg`) corner radii to maintain clear content grouping while matching the pill ethos.
+- Floating bottom sheets, persistent navigation docks, and full-screen diagnostic sheets utilize `3rem` (`rounded-xl`) on their top-leading edges to create friendly, ergonomic mobile interaction boundaries.
+
+## Components
+
+### Buttons
+- **Primary:** Filled `#0284C7` with `#FFFFFF` text, pill curvature, 48px height, `1.5rem` horizontal padding. Active state darkens to `#0369A1`.
+- **Emergency Action:** Filled `#DC2626` with `#FFFFFF` text, pill shape, high visual weight, accompanied by a vibrating or pulsing state during unacknowledged triage codes.
+- **Secondary / Ghost:** Outlined with `1.5px solid #0284C7`, `#0284C7` text, transparent background. Active state triggers 10% `#0284C7` tint fill.
+
+### Chips & Status Badges
+- Encapsulated pills with a fixed height of 28px for badges, 36px for selectable filter chips.
+- Triage Emergency: `#FEE2E2` fill with `#DC2626` text, dot status indicator (8px circle).
+- Triage Warning: `#FEF3C7` fill with `#D97706` text.
+- Verified AI / Stable: `#D1FAE5` fill with `#059669` text.
+
+### Cards (Patient Records & Lab Panels)
+- `#FFFFFF` background, `2rem` (`rounded-lg`) corners, `1px solid #E2E8F0`, padding of `1.25rem`.
+- Divided internally with subtle `#F1F5F9` lines. Header contains patient MRN and telemetry indicator, body hosts vital parameters, footer contains cross-hospital origin badge (e.g., "General Hospital Network via MedZex Node").
+
+### Form Fields & Inputs
+- Fully rounded pill geometry (`1rem`), 48px height, `#FFFFFF` surface with `1.5px solid #CBD5E1`.
+- On focus: border shifts to `#0284C7` with a matching 3px soft aura (`rgba(2, 132, 199, 0.15)`).
+- Trailing icons indicate AI syntax parsing or biometric verification states.
+
+### Checkboxes & Radios
+- Pill-compatible radio targets: 22px concentric circles with `#0284C7` fill on check.
+- Checkboxes: 20px rounded squares (`0.375rem` radius) with high-contrast `#0284C7` fill and white checkmark icon.
+
+### Tab Navigation (Mobile Bottom Bar)
+- Persistent floating dock elevated at `Level 2`, positioned with `1rem` margin from screen bottom, pill-encapsulated (`rounded-xl`).
+- 64px total height, `#FFFFFF` surface, holding 4–5 core actions (Records, AI Triage, Emergency Access, Hospital Vault, Profile). Active tab receives a localized `#0284C7` pill indicator with white icon/label.
+
+### Emergency Drawer
+- Quick-release drawer accessible from any mobile screen via a top-right persistent red pulse trigger. Slides down with `2rem` bottom radius, providing zero-auth immediate access to blood type, severe allergies, and primary contact overrides.

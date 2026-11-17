@@ -1,0 +1,6 @@
+{
+  "name": "BioPulse ER",
+  "description": "Biometric fingerprint patient intake and unconscious emergency AI triage system for paramedics and ER teams.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

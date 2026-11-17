@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Manrope", system-ui, -apple-system, sans-serif;
+  --font-sans: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-clinical-canvas: #f8f9ff;
+  --color-clinical-surface: #ffffff;
+  --color-clinical-low: #eff4ff;
+  --color-clinical-container: #e5eeff;
+  --color-clinical-blue: #0a4572;
+  --color-precision-cyan: #0284c7;
+  --color-vital-cyan: #06b6d4;
+  --color-critical: #dc2626;
+  --color-critical-bg: #fee2e2;
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-stable: #059669;
+  --color-stable-bg: #d1fae5;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #f8f9ff;
+    color: #0b1c30;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes scanSweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0.25;
+  }
+}
+
+.animate-scan-sweep {
+  animation: scanSweep 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan-sweep {
+    animation: none;
+  }
+}
